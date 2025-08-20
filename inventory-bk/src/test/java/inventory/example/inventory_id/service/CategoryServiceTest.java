@@ -1,0 +1,163 @@
+package inventory.example.inventory_id.service;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import inventory.example.inventory_id.model.Category;
+import inventory.example.inventory_id.model.Item;
+import inventory.example.inventory_id.repository.CategoryRepo;
+import inventory.example.inventory_id.request.CategoryRequest;
+
+@ExtendWith(MockitoExtension.class)
+public class CategoryServiceTest {
+
+  @Mock
+  private CategoryRepo categoryRepo;
+
+  @InjectMocks
+  private CategoryService categoryService;
+
+  @Test
+  void testCreateCategorySuccess() {
+    CategoryRequest request = new CategoryRequest();
+    request.setName("TestCategory");
+    int userId = 1;
+
+    when(categoryRepo.existsByUserIdAndName(userId, "TestCategory")).thenReturn(false);
+
+    Category savedCategory = new Category();
+    savedCategory.setName("TestCategory");
+    savedCategory.setUserId(userId);
+
+    when(categoryRepo.save(any(Category.class))).thenReturn(savedCategory);
+
+    Category result = categoryService.createCategory(request, userId);
+
+    assertEquals("TestCategory", result.getName());
+    assertEquals(userId, result.getUserId());
+  }
+
+  @Test
+  void testCreateCategoryAlreadyExists() {
+    CategoryRequest request = new CategoryRequest();
+    request.setName("TestCategory");
+    int userId = 1;
+
+    when(categoryRepo.existsByUserIdAndName(userId, "TestCategory")).thenReturn(true);
+    when(categoryRepo.findByUserIdAndName(userId, "TestCategory")).thenReturn(Optional.of(new Category()));
+
+    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+      categoryService.createCategory(request, userId);
+    });
+
+    assertEquals("カテゴリー名はすでに存在します", exception.getMessage());
+  }
+
+  @Test
+  void testCreateCategoryAlreadyDeleted() {
+    CategoryRequest request = new CategoryRequest();
+    request.setName("TestCategory");
+    int userId = 1;
+
+    when(categoryRepo.countByUserIdAndDeletedFlagFalse(userId)).thenReturn(0);
+    when(categoryRepo.existsByUserIdAndName(userId, "TestCategory")).thenReturn(true);
+    Category existingCategory = new Category("TestCategory");
+    existingCategory.setDeletedFlag(true);
+    when(categoryRepo.findByUserIdAndName(userId, "TestCategory")).thenReturn(Optional.of(existingCategory));
+    when(categoryRepo.save(any(Category.class))).thenReturn(existingCategory);
+
+    Category result = categoryService.createCategory(request, userId);
+    assertFalse(result.isDeletedFlag());
+  }
+
+  @Test
+  void testCreateCategoryLimitExceeded() {
+    CategoryRequest request = new CategoryRequest();
+    request.setName("TestCategory");
+    int userId = 1;
+
+    when(categoryRepo.countByUserIdAndDeletedFlagFalse(userId)).thenReturn(50);
+
+    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+      categoryService.createCategory(request, userId);
+    });
+
+    assertEquals("登録できるカテゴリの上限に達しています", exception.getMessage());
+  }
+
+  @Test
+  void testUpdateCategorySuccess() {
+    UUID categoryId = UUID.randomUUID();
+    CategoryRequest request = new CategoryRequest();
+    request.setName("UpdatedName");
+    int userId = 1;
+
+    Category category = new Category("OldName");
+    when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
+    when(categoryRepo.save(any(Category.class))).thenReturn(category);
+
+    Category result = categoryService.updateCategory(categoryId, request, userId);
+    assertEquals("UpdatedName", result.getName());
+  }
+
+  @Test
+  void testUpdateCategoryNotFound() {
+    UUID categoryId = UUID.randomUUID();
+    CategoryRequest request = new CategoryRequest();
+    request.setName("UpdatedName");
+    int userId = 1;
+
+    when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.empty());
+
+    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+      categoryService.updateCategory(categoryId, request, userId);
+    });
+
+    assertEquals("カテゴリーが見つかりません", exception.getMessage());
+  }
+
+  @Test
+  void testDeleteCategorySuccess() {
+    UUID categoryId = UUID.randomUUID();
+    int userId = 1;
+    Category category = new Category();
+    category.setItems(new ArrayList<>());
+    when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
+    when(categoryRepo.save(any(Category.class))).thenReturn(category);
+
+    assertDoesNotThrow(() -> categoryService.deleteCategory(categoryId, userId));
+    assertTrue(category.isDeletedFlag());
+  }
+
+  @Test
+  void testDeleteCategoryHasItems() {
+    UUID categoryId = UUID.randomUUID();
+    int userId = 1;
+    Category category = new Category();
+    ArrayList<Item> items = new ArrayList<>();
+    items.add(new Item());
+    category.setItems(items);
+    when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
+
+    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+      categoryService.deleteCategory(categoryId, userId);
+    });
+
+    assertEquals("アイテムが存在するため削除できません", exception.getMessage());
+  }
+}
