@@ -1,0 +1,24 @@
+package inventory.example.inventory_id.repository;
+
+import inventory.example.inventory_id.model.Category;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface CategoryRepo extends JpaRepository<Category, UUID> {
+  boolean existsByUserIdAndName(int userId, String name);
+
+  List<Category> findByUserIdIn(List<Integer> userIds);
+
+  Optional<Category> findByUserIdAndName(int userId, String name);
+
+  Optional<Category> findByUserIdAndId(int userId, UUID id);
+
+  int countByUserIdAndDeletedFlagFalse(int userId);
+
+}
