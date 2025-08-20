@@ -2,57 +2,52 @@
 ## ER図
 ```mermaid
 erDiagram
-    USER {
-        string id PK
-        string email
-        string name
-    }
+  EXTERNAL_FIREBASE_USER {
+    uuid id PK
+  }
 
     ITEM {
-        string id PK
-        string name
-        int quantity
-        string category_id FK
-        string user_id FK
-        boolean deleted_flag
-        datetime updated_at
+        uuid id PK "アイテムID(主キー)"
+        string name "アイテム名"
+        int quantity "アイテム数量"
+        uuid category_id FK "カテゴリID(外部キー)"
+        uuid user_id "ユーザーID"
+        boolean deleted_flag "削除フラグ"
+        datetime updated_at "更新日時"
     }
     
     CATEGORY {
-        string id PK
-        string name
-        string user_id FK
-        boolean deleted_flag
+        uuid id PK "カテゴリID(主キー)"
+        string name "カテゴリ名"
+        uuid user_id  "ユーザーID"
+        boolean deleted_flag "削除フラグ"
     }
 
     USER ||--o{ CATEGORY : "作成"
     USER ||--o{ ITEM : "作成"
-    ITEM ||--|| USER : "属する"
     ITEM }o--|| CATEGORY : "属する"
 ```
 
 
 ## DBML
 ```
-Table user {
-  id string [pk]
-  email string
-  name string
+Table EXTERNAL_FIREBASE_USER {
+  id uuid [pk]
 }
 
 Table category {
-  id string [pk]
+  id uuid [pk]
   name string
-  user_id string [ref: > user.id]
+  user_id uuid [ref: > EXTERNAL_FIREBASE_USER.id]
   deleted_flag boolean
 }
 
 Table item {
-  id string [pk]
+  id uuid [pk]
   name string
   quantity int
-  category_id string [ref: > category.id]
-  user_id string [ref: > user.id, not null]
+  category_id uuid [ref: > category.id]
+  user_id uuid [ref: > EXTERNAL_FIREBASE_USER.id, not null]
   deleted_flag boolean
   updated_at datetime
 }
