@@ -12,12 +12,15 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
+import inventory.example.inventory_id.dto.CategoryDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
@@ -33,6 +36,7 @@ public class CategoryServiceTest {
   private CategoryService categoryService;
 
   @Test
+  @DisplayName("カテゴリー作成成功")
   void testCreateCategorySuccess() {
     CategoryRequest request = new CategoryRequest();
     request.setName("TestCategory");
@@ -53,6 +57,7 @@ public class CategoryServiceTest {
   }
 
   @Test
+  @DisplayName("カテゴリー名がすでに存在する場合のエラー")
   void testCreateCategoryAlreadyExists() {
     CategoryRequest request = new CategoryRequest();
     request.setName("TestCategory");
@@ -61,20 +66,20 @@ public class CategoryServiceTest {
     when(categoryRepo.existsByUserIdAndName(userId, "TestCategory")).thenReturn(true);
     when(categoryRepo.findByUserIdAndName(userId, "TestCategory")).thenReturn(Optional.of(new Category()));
 
-    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+    Exception exception = assertThrows(ResponseStatusException.class, () -> {
       categoryService.createCategory(request, userId);
     });
 
-    assertEquals("カテゴリー名はすでに存在します", exception.getMessage());
+    assertEquals("カテゴリー名はすでに存在します", ((ResponseStatusException) exception).getReason());
   }
 
   @Test
+  @DisplayName("削除済みカテゴリーの再作成")
   void testCreateCategoryAlreadyDeleted() {
     CategoryRequest request = new CategoryRequest();
     request.setName("TestCategory");
     int userId = 1;
 
-    when(categoryRepo.countByUserIdAndDeletedFlagFalse(userId)).thenReturn(0);
     when(categoryRepo.existsByUserIdAndName(userId, "TestCategory")).thenReturn(true);
     Category existingCategory = new Category("TestCategory");
     existingCategory.setDeletedFlag(true);
@@ -86,6 +91,7 @@ public class CategoryServiceTest {
   }
 
   @Test
+  @DisplayName("登録できるカテゴリの上限に達している場合のエラー")
   void testCreateCategoryLimitExceeded() {
     CategoryRequest request = new CategoryRequest();
     request.setName("TestCategory");
@@ -93,14 +99,15 @@ public class CategoryServiceTest {
 
     when(categoryRepo.countByUserIdAndDeletedFlagFalse(userId)).thenReturn(50);
 
-    Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+    Exception exception = assertThrows(ResponseStatusException.class, () -> {
       categoryService.createCategory(request, userId);
     });
 
-    assertEquals("登録できるカテゴリの上限に達しています", exception.getMessage());
+    assertEquals("登録できるカテゴリの上限に達しています", ((ResponseStatusException) exception).getReason());
   }
 
   @Test
+  @DisplayName("カテゴリーアップデート成功")
   void testUpdateCategorySuccess() {
     UUID categoryId = UUID.randomUUID();
     CategoryRequest request = new CategoryRequest();
@@ -111,11 +118,12 @@ public class CategoryServiceTest {
     when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
     when(categoryRepo.save(any(Category.class))).thenReturn(category);
 
-    Category result = categoryService.updateCategory(categoryId, request, userId);
+    CategoryDto result = categoryService.updateCategory(categoryId, request, userId);
     assertEquals("UpdatedName", result.getName());
   }
 
   @Test
+  @DisplayName("アップデートしたいデータがない場合のエラー")
   void testUpdateCategoryNotFound() {
     UUID categoryId = UUID.randomUUID();
     CategoryRequest request = new CategoryRequest();
@@ -132,6 +140,7 @@ public class CategoryServiceTest {
   }
 
   @Test
+  @DisplayName("カテゴリー削除成功")
   void testDeleteCategorySuccess() {
     UUID categoryId = UUID.randomUUID();
     int userId = 1;
@@ -145,6 +154,7 @@ public class CategoryServiceTest {
   }
 
   @Test
+  @DisplayName("カテゴリー削除時にアイテムが存在する場合のエラー")
   void testDeleteCategoryHasItems() {
     UUID categoryId = UUID.randomUUID();
     int userId = 1;

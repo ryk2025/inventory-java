@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import inventory.example.inventory_id.dto.CategoryDto;
 import inventory.example.inventory_id.model.Item;
@@ -28,32 +29,33 @@ import jakarta.websocket.server.PathParam;
 public class CategoryController extends BaseController {
   @Autowired
   private CategoryService categoryService;
-  // TODO :change to the actual userId
-  int userId = 1111;
 
   @GetMapping()
-  public ResponseEntity<List<CategoryDto>> getAllCategories(@RequestParam("user_id") Integer userId) {
+  public ResponseEntity<Object> getAllCategories() {
     try {
+      Integer userId = fetchUserIdFromToken();
       List<CategoryDto> categories = categoryService.getAllCategories(userId);
-      return ResponseEntity.ok(categories);
+      return response(HttpStatus.OK, categories);
     } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+      return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
   }
 
   @GetMapping("/items")
   public ResponseEntity<Optional<List<Item>>> getCategoryItems(@RequestParam UUID categoryId) {
+    Integer userId = fetchUserIdFromToken();
     Optional<List<Item>> items = categoryService.getCategoryItems(userId, categoryId);
-    return ResponseEntity.ok(items);
+    return response(HttpStatus.OK, items);
   }
 
   @PostMapping()
   public ResponseEntity<Object> createCategory(@RequestBody @Valid CategoryRequest categoryRequest) {
     try {
+      Integer userId = fetchUserIdFromToken();
       categoryService.createCategory(categoryRequest, userId);
-      return response(HttpStatus.CREATED, "カテゴリーが作成されました");
-    } catch (IllegalArgumentException e) {
-      return response(HttpStatus.BAD_REQUEST, e.getMessage());
+      return response(HttpStatus.CREATED);
+    } catch (ResponseStatusException e) {
+      return response(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason());
     } catch (Exception e) {
       return response(HttpStatus.INTERNAL_SERVER_ERROR, "サーバーエラーが発生しました");
     }
@@ -63,8 +65,9 @@ public class CategoryController extends BaseController {
   public ResponseEntity<Object> putMethodName(@PathParam("category_id") UUID category_id,
       @RequestBody CategoryRequest categoryRequest) {
     try {
-      categoryService.updateCategory(category_id, categoryRequest, userId);
-      return response(HttpStatus.OK, "カテゴリーが更新されました");
+      Integer userId = fetchUserIdFromToken();
+      CategoryDto updated = categoryService.updateCategory(category_id, categoryRequest, userId);
+      return response(HttpStatus.OK, updated);
     } catch (IllegalArgumentException e) {
       return response(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (Exception e) {
@@ -75,8 +78,11 @@ public class CategoryController extends BaseController {
   @DeleteMapping()
   public ResponseEntity<Object> deleteCategory(@PathParam("category_id") UUID category_id) {
     try {
+      Integer userId = fetchUserIdFromToken();
       categoryService.deleteCategory(category_id, userId);
       return response(HttpStatus.NO_CONTENT);
+    } catch (IllegalArgumentException e) {
+      return response(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (Exception e) {
       return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
