@@ -7,10 +7,10 @@ erDiagram
   }
 
     ITEM {
-        string id PK "アイテムID(主キー)"
+        uuid id PK "アイテムID(主キー)"
         string name "アイテム名"
         int quantity "アイテム数量"
-        string category_id FK "カテゴリID(外部キー)"
+        uuid category_id FK "カテゴリID(外部キー)"
         uuid user_id "ユーザーID"
         boolean deleted_flag "削除フラグ"
         datetime updated_at "更新日時"
@@ -32,22 +32,22 @@ erDiagram
 ## DBML
 ```
 Table EXTERNAL_FIREBASE_USER {
-  id string [pk]
+  id uuid [pk]
 }
 
 Table category {
-  id string [pk]
+  id uuid [pk]
   name string
-  user_id string [ref: > EXTERNAL_FIREBASE_USER.id]
+  user_id uuid [ref: > EXTERNAL_FIREBASE_USER.id]
   deleted_flag boolean
 }
 
 Table item {
-  id string [pk]
+  id uuid [pk]
   name string
   quantity int
-  category_id string [ref: > category.id]
-  user_id string [ref: > EXTERNAL_FIREBASE_USER.id, not null]
+  category_id uuid [ref: > category.id]
+  user_id uuid [ref: > EXTERNAL_FIREBASE_USER.id, not null]
   deleted_flag boolean
   updated_at datetime
 }
