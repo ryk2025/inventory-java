@@ -19,6 +19,8 @@ public interface CategoryRepo extends JpaRepository<Category, UUID> {
 
   Optional<Category> findByUserIdAndId(int userId, UUID id);
 
+  List<Category> findByUserIdInAndName(List<Integer> userIds, String name);
+
   int countByUserIdAndDeletedFlagFalse(int userId);
 
 }

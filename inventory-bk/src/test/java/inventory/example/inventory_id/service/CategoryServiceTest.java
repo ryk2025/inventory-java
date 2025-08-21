@@ -20,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-import inventory.example.inventory_id.dto.CategoryDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;

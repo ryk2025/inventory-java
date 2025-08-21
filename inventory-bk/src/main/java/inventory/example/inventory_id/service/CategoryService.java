@@ -62,21 +62,26 @@ public class CategoryService {
     return categoryRepo.save(category);
   }
 
-  public CategoryDto updateCategory(UUID categoryId, CategoryRequest categoryRequest, int userId) {
+  public Category updateCategory(UUID categoryId, CategoryRequest categoryRequest, int userId) {
     Optional<Category> categoryOpt = categoryRepo.findByUserIdAndId(userId, categoryId);
     if (!categoryOpt.isPresent()) {
       throw new IllegalArgumentException("カテゴリーが見つかりません");
     }
     Category category = categoryOpt.get();
+    if (category.getUserId() != userId) {
+      throw new IllegalArgumentException("デフォルトカテゴリは編集できません");
+    }
     category.setName(categoryRequest.getName());
-    Category result = categoryRepo.save(category);
-    return new CategoryDto(result.getName(), result.getItems());
+    return categoryRepo.save(category);
   }
 
   public void deleteCategory(UUID id, int userId) {
     Optional<Category> categoryOpt = categoryRepo.findByUserIdAndId(userId, id);
     if (categoryOpt.isPresent()) {
       Category category = categoryOpt.get();
+      if (category.getUserId() != userId) {
+        throw new IllegalArgumentException("デフォルトカテゴリは削除できません");
+      }
       if (category.getItems() == null || category.getItems().isEmpty()) {
         // アイテムが存在しない場合のみ削除フラグを立てる
         category.setDeletedFlag(true);

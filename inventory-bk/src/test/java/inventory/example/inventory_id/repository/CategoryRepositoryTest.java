@@ -121,4 +121,12 @@ public class CategoryRepositoryTest {
     int count = categoryRepo.countByUserIdAndDeletedFlagFalse(userId2);
     assertThat(count).isEqualTo(0);
   }
+
+  @Test
+  @DisplayName("findByUserIdInAndNameは正しいカテゴリを返す")
+  void testFindByUserIdInAndName() {
+    List<Category> categories = categoryRepo.findByUserIdInAndName(Arrays.asList(userId1, userId2), name1);
+    assertThat(categories).hasSize(1);
+    assertThat(categories.get(0).getName()).isEqualTo(name1);
+  }
 }
