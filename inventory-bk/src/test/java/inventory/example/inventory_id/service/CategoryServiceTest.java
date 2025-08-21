@@ -115,10 +115,11 @@ public class CategoryServiceTest {
     int userId = 1;
 
     Category category = new Category("OldName");
+    category.setUserId(userId);
     when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
     when(categoryRepo.save(any(Category.class))).thenReturn(category);
 
-    CategoryDto result = categoryService.updateCategory(categoryId, request, userId);
+    Category result = categoryService.updateCategory(categoryId, request, userId);
     assertEquals("UpdatedName", result.getName());
   }
 
@@ -145,6 +146,7 @@ public class CategoryServiceTest {
     UUID categoryId = UUID.randomUUID();
     int userId = 1;
     Category category = new Category();
+    category.setUserId(userId);
     category.setItems(new ArrayList<>());
     when(categoryRepo.findByUserIdAndId(userId, categoryId)).thenReturn(Optional.of(category));
     when(categoryRepo.save(any(Category.class))).thenReturn(category);
@@ -159,6 +161,7 @@ public class CategoryServiceTest {
     UUID categoryId = UUID.randomUUID();
     int userId = 1;
     Category category = new Category();
+    category.setUserId(userId);
     ArrayList<Item> items = new ArrayList<>();
     items.add(new Item());
     category.setItems(items);
