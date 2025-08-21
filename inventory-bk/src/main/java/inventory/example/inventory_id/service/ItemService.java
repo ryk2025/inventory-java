@@ -1,7 +1,6 @@
 package inventory.example.inventory_id.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,14 +33,14 @@ public class ItemService {
     }
     Category cate = categoryList.get(0);
 
-    // 同じ名前のアイテムが存在するかをチェック
-    Optional<Item> existingItemOpt = cate.getItems().stream()
-        .filter(i -> i.getName().equals(itemRequest.getName()))
-        .findFirst();
+    // 同じ名前のアイテムが存在し、削除されていない場合はエラーを投げる
+    cate.getItems().stream()
+        .filter(i -> i.getName().equals(itemRequest.getName()) && !i.isDeletedFlag())
+        .findAny()
+        .ifPresent(i -> {
+          throw new IllegalArgumentException(String.format("アイテム名 '%s' は既に存在します", itemRequest.getName()));
+        });
 
-    if (existingItemOpt.isPresent()) {
-      throw new IllegalArgumentException("そのアイテム名は既に登録されています");
-    }
     Item item = new Item();
     item.setName(itemRequest.getName());
     item.setUserId(userId);
@@ -50,5 +49,4 @@ public class ItemService {
     cate.getItems().add(item);
     categoryRepository.save(cate);
   }
-
 }

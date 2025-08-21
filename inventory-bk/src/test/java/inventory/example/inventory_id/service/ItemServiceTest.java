@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -46,6 +47,7 @@ class ItemServiceTest {
   }
 
   @Test
+  @Tag("createItem")
   @DisplayName("アイテム作成成功")
   void testCreateItemSuccess() {
     int userId = defaultUserId;
@@ -73,7 +75,8 @@ class ItemServiceTest {
   }
 
   @Test
-  @DisplayName("アイテム作成失敗 - カテゴリーが見つからない")
+  @Tag("createItem")
+  @DisplayName("アイテム作成失敗- カテゴリーが見つからない")
   void testCreateItemCategoryNotFound() {
     int userId = defaultUserId;
     int systemUserId = defaultSystemUserId;
@@ -92,6 +95,7 @@ class ItemServiceTest {
   }
 
   @Test
+  @Tag("createItem")
   @DisplayName("アイテム作成失敗 - 同じ名前のアイテムが存在する")
   void testCreateItemAlreadyExists() {
     int userId = defaultUserId;
@@ -104,6 +108,7 @@ class ItemServiceTest {
 
     Item existingItem = new Item();
     existingItem.setName(itemName);
+
     category.setItems(List.of(existingItem));
 
     ItemRequest request = new ItemRequest();
@@ -115,6 +120,36 @@ class ItemServiceTest {
         .thenReturn(List.of(category));
 
     Exception ex = assertThrows(IllegalArgumentException.class, () -> itemService.createItem(userId, request));
-    assertEquals("そのアイテム名は既に登録されています", ex.getMessage());
+    assertEquals(String.format("アイテム名 '%s' は既に存在します", itemName), ex.getMessage());
+  }
+
+  @Test
+  @Tag("createItem")
+  @DisplayName("アイテム作成 - 同じ名前のアイテムが存在するが削除フラグが立っている場合")
+  void testCreateItemThatHasDeletedFlag() {
+    int userId = defaultUserId;
+    int systemUserId = defaultSystemUserId;
+    String categoryName = "Laptop";
+    String itemName = "Notebook";
+
+    Category category = new Category(categoryName);
+    category.setUserId(userId);
+
+    Item existingItem = new Item();
+    existingItem.setName(itemName);
+    existingItem.setDeletedFlag(true);
+
+    category.setItems(new ArrayList<>(List.of(existingItem)));
+
+    ItemRequest request = new ItemRequest();
+    request.setName(itemName);
+    request.setQuantity(5);
+    request.setCategoryName(categoryName);
+
+    when(categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName))
+        .thenReturn(List.of(category));
+
+    assertDoesNotThrow(() -> itemService.createItem(userId, request));
+    verify(categoryRepository).save(any(Category.class));
   }
 }
