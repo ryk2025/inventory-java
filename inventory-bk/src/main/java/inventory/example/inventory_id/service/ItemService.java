@@ -44,7 +44,15 @@ public class ItemService {
         .findFirst();
 
     if (existingItemOpt.isPresent()) {
-      throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+      if (existingItemOpt.get().isDeletedFlag()) {
+        // 既に削除されたアイテムの場合は復活させる
+        existingItemOpt.get().setDeletedFlag(false);
+        existingItemOpt.get().setQuantity(itemRequest.getQuantity());
+        itemRepository.save(existingItemOpt.get());
+        return;
+      } else {
+        throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+      }
     }
     Item item = new Item();
     item.setName(itemRequest.getName());
@@ -62,7 +70,7 @@ public class ItemService {
     }
     Category category = categoryList.get(0);
     // カテゴリーに紐づくアイテムを取得
-    List<ItemDto> items = category.getItems().stream()
+    List<ItemDto> items = category.getItems().stream().filter(i -> !i.isDeletedFlag())
         // 更新日時でソートし、DTOに変換
         .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
         .map(item -> {
