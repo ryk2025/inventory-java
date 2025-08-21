@@ -1,12 +1,16 @@
 package inventory.example.inventory_id.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
@@ -51,4 +55,25 @@ public class ItemService {
     categoryRepository.save(cate);
   }
 
+  public List<ItemDto> getItems(Integer userId, String categoryName) {
+    List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName);
+    if (categoryList.isEmpty()) {
+      throw new IllegalArgumentException("カテゴリーが見つかりません");
+    }
+    Category category = categoryList.get(0);
+    // カテゴリーに紐づくアイテムを取得
+    List<ItemDto> items = category.getItems().stream()
+        // 更新日時でソートし、DTOに変換
+        .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
+        .map(item -> {
+          ItemDto dto = new ItemDto();
+          dto.setName(item.getName());
+          dto.setQuantity(item.getQuantity());
+          return dto;
+        }).toList();
+    if (items.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが登録されていません");
+    }
+    return items;
+  }
 }
