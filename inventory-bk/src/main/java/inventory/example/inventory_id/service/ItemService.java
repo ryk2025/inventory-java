@@ -3,6 +3,7 @@ package inventory.example.inventory_id.service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,11 +78,42 @@ public class ItemService {
           ItemDto dto = new ItemDto();
           dto.setName(item.getName());
           dto.setQuantity(item.getQuantity());
+          dto.setCategoryName(item.getCategoryName());
           return dto;
         }).toList();
     if (items.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが登録されていません");
     }
     return items;
+  }
+
+  public void updateItem(Integer userId, UUID itemId, ItemRequest itemRequest) {
+    // 自分とデフォルトのカテゴリーアイテムを取得
+    Optional<List<Item>> itemsOpt = itemRepository.findByUserIdInAndCategory_Name(
+        List.of(userId, systemUserId),
+        itemRequest.getCategoryName());
+    if (itemsOpt.isEmpty() || itemsOpt.get().isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
+    }
+    // 編集したいアイテムを取得
+    Optional<Item> match = itemsOpt.get().stream()
+        .filter(i -> i.getId().equals(itemId))
+        .findFirst();
+    if (match.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
+    }
+
+    // 編集したい名前は他のアイテムに重複かをチェック
+    List<Item> sameNamed = itemsOpt.get().stream()
+        .filter(i -> i.getName().equals(itemRequest.getName()) && !i.getId().equals(itemId))
+        .toList();
+    if (!sameNamed.isEmpty()) {
+      throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+    }
+
+    Item item = match.get();
+    item.setName(itemRequest.getName());
+    item.setQuantity(itemRequest.getQuantity());
+    itemRepository.save(item);
   }
 }
