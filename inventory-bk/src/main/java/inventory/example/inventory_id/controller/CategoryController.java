@@ -66,8 +66,8 @@ public class CategoryController extends BaseController {
       @RequestBody CategoryRequest categoryRequest) {
     try {
       Integer userId = fetchUserIdFromToken();
-      CategoryDto updated = categoryService.updateCategory(category_id, categoryRequest, userId);
-      return response(HttpStatus.OK, updated);
+      categoryService.updateCategory(category_id, categoryRequest, userId);
+      return response(HttpStatus.OK, "カスタムカテゴリの更新が完了しました");
     } catch (IllegalArgumentException e) {
       return response(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (Exception e) {
@@ -80,7 +80,7 @@ public class CategoryController extends BaseController {
     try {
       Integer userId = fetchUserIdFromToken();
       categoryService.deleteCategory(category_id, userId);
-      return response(HttpStatus.NO_CONTENT);
+      return response(HttpStatus.NO_CONTENT, "カスタムカテゴリの削除が完了しました");
     } catch (IllegalArgumentException e) {
       return response(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (Exception e) {
