@@ -14,13 +14,13 @@ import org.springframework.web.server.ResponseStatusException;
 import inventory.example.inventory_id.dto.CategoryDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
-import inventory.example.inventory_id.repository.CategoryRepo;
+import inventory.example.inventory_id.repository.CategoryRepository;
 import inventory.example.inventory_id.request.CategoryRequest;
 
 @Service
 public class CategoryService {
   @Autowired
-  private CategoryRepo categoryRepo;
+  private CategoryRepository categoryRepo;
 
   @Value("${system.userid}")
   private int systemUserId;
@@ -43,20 +43,23 @@ public class CategoryService {
 
   public Category createCategory(CategoryRequest categoryRequest, int userId) {
 
+    List<Category> categoryList = categoryRepo.findByUserIdIn(List.of(userId, systemUserId));
+
+    List<Category> userCategories = categoryList.stream()
+        .filter(category -> category.getUserId() == userId)
+        .toList();
+
     // ユーザのカテゴリ数を確認,50以上は登録不可
-    if (categoryRepo.countByUserIdAndDeletedFlagFalse(userId) >= 50) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "登録できるカテゴリの上限に達しています");
+    if (userCategories.size() >= 50) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT,
+          "登録できるカテゴリの上限に達しています");
     }
-    // カテゴリー名の重複チェック
-    if (categoryRepo.existsByUserIdAndName(userId, categoryRequest.getName())) {
-      Optional<Category> existing = categoryRepo.findByUserIdAndName(userId, categoryRequest.getName());
-      if (existing.isPresent() && existing.get().isDeletedFlag()) {
-        // カテゴリーが存在し、削除フラグが立っている場合は復活させる
-        existing.get().setDeletedFlag(false);
-        return categoryRepo.save(existing.get());
-      }
+    boolean isNameExist = categoryList.stream()
+        .anyMatch(category -> category.getName().equals(categoryRequest.getName()) && !category.isDeletedFlag());
+    if (isNameExist) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "カテゴリー名はすでに存在します");
     }
+
     Category category = new Category(categoryRequest.getName());
     category.setUserId(userId);
     return categoryRepo.save(category);
@@ -76,19 +79,24 @@ public class CategoryService {
   }
 
   public void deleteCategory(UUID id, int userId) {
-    Optional<Category> categoryOpt = categoryRepo.findByUserIdAndId(userId, id);
-    if (categoryOpt.isPresent()) {
-      Category category = categoryOpt.get();
-      if (category.getUserId() != userId) {
-        throw new IllegalArgumentException("デフォルトカテゴリは削除できません");
-      }
-      if (category.getItems() == null || category.getItems().isEmpty()) {
-        // アイテムが存在しない場合のみ削除フラグを立てる
-        category.setDeletedFlag(true);
-        categoryRepo.save(category);
-      } else {
-        throw new IllegalArgumentException("アイテムが存在するため削除できません");
-      }
+    List<Category> categoryList = categoryRepo.findByUserIdIn(List.of(userId, systemUserId));
+    if (categoryList.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "カテゴリーが見つかりません");
+    }
+    Category category = categoryList.stream()
+        .filter(cat -> cat.getId().equals(id))
+        .findFirst()
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "カテゴリーが見つかりません"));
+
+    if (category.getUserId() != userId) {
+      throw new IllegalArgumentException("デフォルトカテゴリは削除できません");
+    }
+    if (category.getItems() == null || category.getItems().isEmpty()) {
+      // アイテムが存在しない場合のみ削除フラグを立てる
+      category.setDeletedFlag(true);
+      categoryRepo.save(category);
+    } else {
+      throw new IllegalArgumentException("アイテムが存在するため削除できません");
     }
   }
 }

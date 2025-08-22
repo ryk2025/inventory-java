@@ -21,16 +21,16 @@ import inventory.example.inventory_id.model.Category;
 public class CategoryRepositoryTest {
 
   @Autowired
-  private CategoryRepo categoryRepo;
+  private CategoryRepository categoryRepo;
 
   private Category category1;
   private Category category2;
   private Category category3;
   private int userId1 = 1;
   private int userId2 = 2;
-  private String name1 = "本";
-  private String name2 = "電子機器";
-  private String name3 = "食料品";
+  private String name1 = "book";
+  private String name2 = "electronics";
+  private String name3 = "groceries";
 
   @BeforeEach
   void setUp() {

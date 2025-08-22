@@ -53,7 +53,7 @@ public class CategoryController extends BaseController {
     try {
       Integer userId = fetchUserIdFromToken();
       categoryService.createCategory(categoryRequest, userId);
-      return response(HttpStatus.CREATED);
+      return response(HttpStatus.CREATED, "カスタムカテゴリの作成が完了しました");
     } catch (ResponseStatusException e) {
       return response(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason());
     } catch (Exception e) {
@@ -62,7 +62,8 @@ public class CategoryController extends BaseController {
   }
 
   @PutMapping()
-  public ResponseEntity<Object> putMethodName(@PathParam("category_id") UUID category_id,
+  public ResponseEntity<Object> putMethodName(
+      @PathParam("category_id") UUID category_id,
       @RequestBody CategoryRequest categoryRequest) {
     try {
       Integer userId = fetchUserIdFromToken();
@@ -80,7 +81,9 @@ public class CategoryController extends BaseController {
     try {
       Integer userId = fetchUserIdFromToken();
       categoryService.deleteCategory(category_id, userId);
-      return response(HttpStatus.NO_CONTENT, "カスタムカテゴリの削除が完了しました");
+      return response(HttpStatus.ACCEPTED, "カスタムカテゴリの削除が完了しました");
+    } catch (ResponseStatusException e) {
+      return response(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason());
     } catch (IllegalArgumentException e) {
       return response(HttpStatus.BAD_REQUEST, e.getMessage());
     } catch (Exception e) {
