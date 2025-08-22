@@ -1,7 +1,6 @@
 package inventory.example.inventory_id.controller;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,9 +41,9 @@ public class CategoryController extends BaseController {
   }
 
   @GetMapping("/items")
-  public ResponseEntity<Optional<List<Item>>> getCategoryItems(@RequestParam UUID categoryId) {
+  public ResponseEntity<List<Item>> getCategoryItems(@RequestParam UUID categoryId) {
     Integer userId = fetchUserIdFromToken();
-    Optional<List<Item>> items = categoryService.getCategoryItems(userId, categoryId);
+    List<Item> items = categoryService.getCategoryItems(userId, categoryId);
     return response(HttpStatus.OK, items);
   }
 

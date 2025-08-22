@@ -33,12 +33,13 @@ public class CategoryService {
         .toList();
   }
 
-  public Optional<List<Item>> getCategoryItems(int userId, UUID categoryId) {
-    Optional<Category> category = categoryRepo.findByUserIdAndId(userId, categoryId);
-    if (category.isPresent()) {
-      return Optional.of(category.get().getItems());
-    }
-    return Optional.empty();
+  public List<Item> getCategoryItems(int userId, UUID categoryId) {
+    List<Category> categories = categoryRepo.findByUserIdIn(List.of(userId, systemUserId));
+    return categories.stream()
+        .filter(category -> category.getId().equals(categoryId))
+        .findFirst()
+        .map(Category::getItems)
+        .orElse(List.of()); // アイテムが見つからない場合は空リストを返す
   }
 
   public Category createCategory(CategoryRequest categoryRequest, int userId) {
