@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-
 public class ItemRequest {
   @NotBlank(message = "アイテム名は必須です")
   @Size(max = 50, message = "アイテム名は50文字以内で入力してください")

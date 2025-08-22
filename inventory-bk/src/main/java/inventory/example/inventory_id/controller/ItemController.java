@@ -32,5 +32,4 @@ public class ItemController extends BaseController {
       return response(HttpStatus.INTERNAL_SERVER_ERROR, "エラーが発生しました");
     }
   }
-
 }
