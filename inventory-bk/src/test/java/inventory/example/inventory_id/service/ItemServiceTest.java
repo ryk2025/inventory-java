@@ -269,4 +269,33 @@ class ItemServiceTest {
     Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.updateItem(userId, itemId, request));
     assertEquals("アイテムが見つかりません", ((ResponseStatusException) ex).getReason());
   }
+
+  @Test
+  @DisplayName("アイテム削除成功")
+  void testDeleteItemSuccess() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    Item item = new Item();
+    item.setId(itemId);
+    item.setUserId(userId);
+
+    when(itemRepository.findByUserIdInAndId(List.of(userId, defaultSystemUserId), itemId))
+        .thenReturn(Optional.of(item));
+    when(itemRepository.save(any(Item.class))).thenReturn(item);
+
+    assertDoesNotThrow(() -> itemService.deleteItem(userId, itemId));
+    assertEquals(true, item.isDeletedFlag());
+    verify(itemRepository).save(item);
+  }
+
+  @Test
+  @DisplayName("アイテム削除失敗 - アイテムが見つからない")
+  void testDeleteItemNotFound() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    when(itemRepository.findByUserIdInAndId(List.of(userId, defaultSystemUserId), itemId))
+        .thenReturn(Optional.empty());
+    Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.deleteItem(userId, itemId));
+    assertEquals("アイテムが見つかりません", ((ResponseStatusException) ex).getReason());
+  }
 }
