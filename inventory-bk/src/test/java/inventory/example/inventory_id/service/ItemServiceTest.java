@@ -26,7 +26,7 @@ import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
-import inventory.example.inventory_id.repository.ItemRepo;
+import inventory.example.inventory_id.repository.ItemRepository;
 import inventory.example.inventory_id.request.ItemRequest;
 
 class ItemServiceTest {
@@ -35,7 +35,7 @@ class ItemServiceTest {
   private CategoryRepo categoryRepository;
 
   @Mock
-  private ItemRepo itemRepository;
+  private ItemRepository itemRepository;
 
   @InjectMocks
   private ItemService itemService;

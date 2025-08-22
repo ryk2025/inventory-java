@@ -18,7 +18,7 @@ import inventory.example.inventory_id.model.Item;
 class ItemRepositoryTest {
 
   @Autowired
-  private ItemRepo itemRepo;
+  private ItemRepository itemRepo;
 
   @Autowired
   private CategoryRepo categoryRepo;

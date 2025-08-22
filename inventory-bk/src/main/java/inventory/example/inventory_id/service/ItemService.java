@@ -15,13 +15,13 @@ import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
-import inventory.example.inventory_id.repository.ItemRepo;
+import inventory.example.inventory_id.repository.ItemRepository;
 import inventory.example.inventory_id.request.ItemRequest;
 
 @Service
 public class ItemService {
   @Autowired
-  private ItemRepo itemRepository;
+  private ItemRepository itemRepository;
 
   @Autowired
   private CategoryRepo categoryRepository;
