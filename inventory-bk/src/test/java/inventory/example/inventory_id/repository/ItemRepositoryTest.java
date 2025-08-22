@@ -17,7 +17,7 @@ import inventory.example.inventory_id.model.Item;
 class ItemRepositoryTest {
 
   @Autowired
-  private ItemRepo itemRepo;
+  private ItemRepository itemRepo;
 
   @Autowired
   private CategoryRepo categoryRepo;
@@ -40,10 +40,9 @@ class ItemRepositoryTest {
     itemRepo.save(item);
 
     // Test
-    Optional<List<Item>> result = itemRepo.findByUserIdInAndCategory_Name(List.of(123), "Laptop");
-    assertThat(result).isPresent();
-    assertThat(result.get()).hasSize(1);
-    assertThat(result.get().get(0).getName()).isEqualTo("Notebook");
-    assertThat(result.get().get(0).getCategoryName()).isEqualTo("Laptop");
+    List<Item> result = itemRepo.findByUserIdInAndCategory_Name(List.of(123), "Laptop");
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getName()).isEqualTo("Notebook");
+    assertThat(result.get(0).getCategoryName()).isEqualTo("Laptop");
   }
 }

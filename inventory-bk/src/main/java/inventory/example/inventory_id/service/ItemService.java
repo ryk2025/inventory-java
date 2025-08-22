@@ -15,13 +15,13 @@ import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
-import inventory.example.inventory_id.repository.ItemRepo;
+import inventory.example.inventory_id.repository.ItemRepository;
 import inventory.example.inventory_id.request.ItemRequest;
 
 @Service
 public class ItemService {
   @Autowired
-  private ItemRepo itemRepository;
+  private ItemRepository itemRepository;
 
   @Autowired
   private CategoryRepo categoryRepository;
@@ -89,14 +89,14 @@ public class ItemService {
 
   public void updateItem(Integer userId, UUID itemId, ItemRequest itemRequest) {
     // 自分とデフォルトのカテゴリーアイテムを取得
-    Optional<List<Item>> itemsOpt = itemRepository.findByUserIdInAndCategory_Name(
+    List<Item> itemsOpt = itemRepository.findByUserIdInAndCategory_Name(
         List.of(userId, systemUserId),
         itemRequest.getCategoryName());
-    if (itemsOpt.isEmpty() || itemsOpt.get().isEmpty()) {
+    if (itemsOpt.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
     }
     // 編集したいアイテムを取得
-    Optional<Item> match = itemsOpt.get().stream()
+    Optional<Item> match = itemsOpt.stream()
         .filter(i -> i.getId().equals(itemId))
         .findFirst();
     if (match.isEmpty()) {
@@ -104,7 +104,7 @@ public class ItemService {
     }
 
     // 編集したい名前は他のアイテムに重複かをチェック
-    List<Item> sameNamed = itemsOpt.get().stream()
+    List<Item> sameNamed = itemsOpt.stream()
         .filter(i -> i.getName().equals(itemRequest.getName()) && !i.getId().equals(itemId))
         .toList();
     if (!sameNamed.isEmpty()) {
