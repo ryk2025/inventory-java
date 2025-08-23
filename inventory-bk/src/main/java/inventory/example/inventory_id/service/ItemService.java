@@ -3,6 +3,7 @@ package inventory.example.inventory_id.service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,13 +15,13 @@ import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepo;
-import inventory.example.inventory_id.repository.ItemRepo;
+import inventory.example.inventory_id.repository.ItemRepository;
 import inventory.example.inventory_id.request.ItemRequest;
 
 @Service
 public class ItemService {
   @Autowired
-  private ItemRepo itemRepository;
+  private ItemRepository itemRepository;
 
   @Autowired
   private CategoryRepo categoryRepository;
@@ -44,7 +45,15 @@ public class ItemService {
         .findFirst();
 
     if (existingItemOpt.isPresent()) {
-      throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+      if (existingItemOpt.get().isDeletedFlag()) {
+        // 既に削除されたアイテムの場合は復活させる
+        existingItemOpt.get().setDeletedFlag(false);
+        existingItemOpt.get().setQuantity(itemRequest.getQuantity());
+        itemRepository.save(existingItemOpt.get());
+        return;
+      } else {
+        throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+      }
     }
     Item item = new Item();
     item.setName(itemRequest.getName());
@@ -62,18 +71,49 @@ public class ItemService {
     }
     Category category = categoryList.get(0);
     // カテゴリーに紐づくアイテムを取得
-    List<ItemDto> items = category.getItems().stream()
+    List<ItemDto> items = category.getItems().stream().filter(i -> !i.isDeletedFlag())
         // 更新日時でソートし、DTOに変換
         .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
         .map(item -> {
           ItemDto dto = new ItemDto();
           dto.setName(item.getName());
           dto.setQuantity(item.getQuantity());
+          dto.setCategoryName(item.getCategoryName());
           return dto;
         }).toList();
     if (items.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが登録されていません");
     }
     return items;
+  }
+
+  public void updateItem(
+      Integer userId,
+      UUID itemId,
+      ItemRequest itemRequest) {
+    // 自分とデフォルトのカテゴリーアイテムを取得
+    List<Item> items = itemRepository.findByUserIdInAndCategory_NameAndDeletedFlagFalse(
+        List.of(userId, systemUserId),
+        itemRequest.getCategoryName());
+    // 編集したいアイテムを取得
+    Optional<Item> match = items.stream()
+        .filter(i -> i.getId().equals(itemId))
+        .findFirst();
+    if (match.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
+    }
+
+    // 編集したい名前は他のアイテムに重複かをチェック
+    List<Item> sameNamed = items.stream()
+        .filter(i -> i.getName().equals(itemRequest.getName()) && !i.getId().equals(itemId))
+        .toList();
+    if (!sameNamed.isEmpty()) {
+      throw new IllegalArgumentException("そのアイテム名は既に登録されています");
+    }
+
+    Item item = match.get();
+    item.setName(itemRequest.getName());
+    item.setQuantity(itemRequest.getQuantity());
+    itemRepository.save(item);
   }
 }
