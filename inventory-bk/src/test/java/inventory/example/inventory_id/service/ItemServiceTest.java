@@ -279,7 +279,7 @@ class ItemServiceTest {
     item.setId(itemId);
     item.setUserId(userId);
 
-    when(itemRepository.findByUserIdInAndId(List.of(userId, defaultSystemUserId), itemId))
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, defaultSystemUserId), itemId))
         .thenReturn(Optional.of(item));
     when(itemRepository.save(any(Item.class))).thenReturn(item);
 
@@ -293,7 +293,7 @@ class ItemServiceTest {
   void testDeleteItemNotFound() {
     int userId = defaultUserId;
     UUID itemId = UUID.randomUUID();
-    when(itemRepository.findByUserIdInAndId(List.of(userId, defaultSystemUserId), itemId))
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, defaultSystemUserId), itemId))
         .thenReturn(Optional.empty());
     Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.deleteItem(userId, itemId));
     assertEquals("アイテムが見つかりません", ((ResponseStatusException) ex).getReason());

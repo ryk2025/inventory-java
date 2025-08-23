@@ -121,7 +121,8 @@ public class ItemService {
       Integer userId,
       UUID itemId) {
     // 自分とデフォルトのカテゴリーアイテムを取得
-    Optional<Item> itemsOpt = itemRepository.findByUserIdInAndId(List.of(userId, systemUserId), itemId);
+    Optional<Item> itemsOpt = itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, systemUserId),
+        itemId);
     if (itemsOpt.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
     }

@@ -48,8 +48,8 @@ class ItemRepositoryTest {
   }
 
   @Test
-  @DisplayName("findByUserIdInAndId 正しいアイテムを取得できる")
-  void testFindByUserIdInAndId() {
+  @DisplayName("findByUserIdInAndIdAndDeletedFlagFalse 正しいアイテムを取得できる")
+  void testFindByUserIdInAndIdAndDeletedFlagFalse() {
     // カテゴリのセットアップ
     Category category = new Category();
     category.setName("Laptop");
@@ -66,13 +66,21 @@ class ItemRepositoryTest {
 
     // ユーザ2アイテムのセットアップ
     Item item2 = new Item();
-    item2.setName("Notebook");
-    item2.setUserId(321);
+    item2.setName("Macbook");
+    item2.setUserId(123);
     item2.setCategory(category);
     item2.setQuantity(1);
+    item2.setDeletedFlag(true);
     itemRepo.save(item2);
 
-    Optional<Item> result = itemRepo.findByUserIdInAndId(List.of(123, 999), item.getId());
+    Item item3 = new Item();
+    item3.setName("Notebook");
+    item3.setUserId(321);
+    item3.setCategory(category);
+    item3.setQuantity(10);
+    itemRepo.save(item3);
+
+    Optional<Item> result = itemRepo.findByUserIdInAndIdAndDeletedFlagFalse(List.of(123, 999), item.getId());
     assertThat(result).isPresent();
     assertThat(result.get().getName()).isEqualTo("Notebook");
     assertThat(result.get().getCategoryName()).isEqualTo("Laptop");
@@ -80,9 +88,9 @@ class ItemRepositoryTest {
   }
 
   @Test
-  @DisplayName("findByUserIdInAndId 存在しない場合は空")
-  void testFindByUserIdInAndIdNotFound() {
-    Optional<Item> result = itemRepo.findByUserIdInAndId(List.of(999), UUID.randomUUID());
+  @DisplayName("findByUserIdInAndIdAndDeletedFlagFalse 存在しない場合は空")
+  void testFindByUserIdInAndIdAndDeletedFlagFalseNotFound() {
+    Optional<Item> result = itemRepo.findByUserIdInAndIdAndDeletedFlagFalse(List.of(999), UUID.randomUUID());
     assertThat(result).isEmpty();
   }
 }
