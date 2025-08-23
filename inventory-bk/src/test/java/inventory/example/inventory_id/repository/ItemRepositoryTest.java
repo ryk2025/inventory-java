@@ -27,22 +27,29 @@ class ItemRepositoryTest {
   void testFindByUserIdInAndCategoryName() {
     // Setup category
     Category category = new Category();
-    category.setName("Laptop");
+    category.setName("PC");
     category.setUserId(123);
     categoryRepo.save(category);
 
     // Setup item
-    Item item = new Item();
-    item.setName("Notebook");
-    item.setUserId(123);
-    item.setCategory(category);
-    item.setQuantity(5);
-    itemRepo.save(item);
+    Item notDeleteditem = new Item();
+    notDeleteditem.setName("Notebook");
+    notDeleteditem.setUserId(123);
+    notDeleteditem.setCategory(category);
+    notDeleteditem.setQuantity(5);
+    itemRepo.save(notDeleteditem);
+    Item deleteditem = new Item();
+    deleteditem.setName("Desktop");
+    deleteditem.setUserId(123);
+    deleteditem.setCategory(category);
+    deleteditem.setQuantity(5);
+    deleteditem.setDeletedFlag(true);
+    itemRepo.save(deleteditem);
 
     // Test
-    List<Item> result = itemRepo.findByUserIdInAndCategory_Name(List.of(123), "Laptop");
+    List<Item> result = itemRepo.findByUserIdInAndCategory_NameAndDeletedFlagFalse(List.of(123), "PC");
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getName()).isEqualTo("Notebook");
-    assertThat(result.get(0).getCategoryName()).isEqualTo("Laptop");
+    assertThat(result.get(0).getCategoryName()).isEqualTo("PC");
   }
 }

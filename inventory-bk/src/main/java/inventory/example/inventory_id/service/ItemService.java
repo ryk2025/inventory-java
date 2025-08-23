@@ -87,16 +87,16 @@ public class ItemService {
     return items;
   }
 
-  public void updateItem(Integer userId, UUID itemId, ItemRequest itemRequest) {
+  public void updateItem(
+      Integer userId,
+      UUID itemId,
+      ItemRequest itemRequest) {
     // 自分とデフォルトのカテゴリーアイテムを取得
-    List<Item> itemsOpt = itemRepository.findByUserIdInAndCategory_Name(
+    List<Item> items = itemRepository.findByUserIdInAndCategory_NameAndDeletedFlagFalse(
         List.of(userId, systemUserId),
         itemRequest.getCategoryName());
-    if (itemsOpt.isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
-    }
     // 編集したいアイテムを取得
-    Optional<Item> match = itemsOpt.stream()
+    Optional<Item> match = items.stream()
         .filter(i -> i.getId().equals(itemId))
         .findFirst();
     if (match.isEmpty()) {
@@ -104,7 +104,7 @@ public class ItemService {
     }
 
     // 編集したい名前は他のアイテムに重複かをチェック
-    List<Item> sameNamed = itemsOpt.stream()
+    List<Item> sameNamed = items.stream()
         .filter(i -> i.getName().equals(itemRequest.getName()) && !i.getId().equals(itemId))
         .toList();
     if (!sameNamed.isEmpty()) {
