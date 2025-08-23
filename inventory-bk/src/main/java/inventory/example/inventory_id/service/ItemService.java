@@ -57,12 +57,17 @@ public class ItemService {
 
   public List<ItemDto> getItems(Integer userId, String categoryName) {
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName);
-    if (categoryList.isEmpty()) {
+    List<Category> notDeletedCategoryList = categoryList.stream()
+        .filter(category -> !category.isDeletedFlag())
+        .toList();
+    if (notDeletedCategoryList.isEmpty()) {
       throw new IllegalArgumentException("カテゴリーが見つかりません");
     }
-    Category category = categoryList.get(0);
+
+    Category category = notDeletedCategoryList.get(0);
     // カテゴリーに紐づくアイテムを取得
     List<ItemDto> items = category.getItems().stream()
+        .filter(item -> !item.isDeletedFlag())
         // 更新日時でソートし、DTOに変換
         .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
         .map(item -> {
@@ -71,9 +76,11 @@ public class ItemService {
           dto.setQuantity(item.getQuantity());
           return dto;
         }).toList();
+
     if (items.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが登録されていません");
     }
+
     return items;
   }
 }
