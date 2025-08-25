@@ -3,6 +3,8 @@ package inventory.example.inventory_id.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,5 +52,12 @@ class ItemRepositoryTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getName()).isEqualTo("Notebook");
     assertThat(result.get(0).getCategoryName()).isEqualTo("PC");
+  }
+
+  @Test
+  @DisplayName("findByUserIdInAndIdAndDeletedFlagFalse 存在しない場合は空")
+  void testFindByUserIdInAndIdAndDeletedFlagFalseNotFound() {
+    Optional<Item> result = itemRepo.findByUserIdInAndIdAndDeletedFlagFalse(List.of(999), UUID.randomUUID());
+    assertThat(result).isEmpty();
   }
 }

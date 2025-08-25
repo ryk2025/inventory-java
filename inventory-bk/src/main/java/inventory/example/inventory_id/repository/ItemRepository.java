@@ -1,6 +1,7 @@
 package inventory.example.inventory_id.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,5 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
       List<Integer> userIds,
       String categoryName);
 
+  Optional<Item> findByUserIdInAndIdAndDeletedFlagFalse(List<Integer> userIds, UUID itemId);
 }

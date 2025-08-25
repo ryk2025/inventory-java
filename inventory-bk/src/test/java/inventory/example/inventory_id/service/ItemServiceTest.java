@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -372,5 +373,34 @@ class ItemServiceTest {
 
     Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.updateItem(userId, itemId, request));
     assertEquals(itemNotFoundMsg, ((ResponseStatusException) ex).getReason());
+  }
+
+  @Test
+  @DisplayName("アイテム削除成功")
+  void testDeleteItemSuccess() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    Item item = new Item();
+    item.setId(itemId);
+    item.setUserId(userId);
+
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, defaultSystemUserId), itemId))
+        .thenReturn(Optional.of(item));
+    when(itemRepository.save(any(Item.class))).thenReturn(item);
+
+    assertDoesNotThrow(() -> itemService.deleteItem(userId, itemId));
+    assertEquals(true, item.isDeletedFlag());
+    verify(itemRepository).save(item);
+  }
+
+  @Test
+  @DisplayName("アイテム削除失敗 - アイテムが見つからない")
+  void testDeleteItemNotFound() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, defaultSystemUserId), itemId))
+        .thenReturn(Optional.empty());
+    Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.deleteItem(userId, itemId));
+    assertEquals("アイテムが見つかりません", ((ResponseStatusException) ex).getReason());
   }
 }

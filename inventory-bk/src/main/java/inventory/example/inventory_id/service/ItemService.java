@@ -114,4 +114,19 @@ public class ItemService {
     item.setQuantity(itemRequest.getQuantity());
     itemRepository.save(item);
   }
+
+  public void deleteItem(
+      Integer userId,
+      UUID itemId) {
+    // 自分とデフォルトのカテゴリーアイテムを取得
+    Optional<Item> itemsOpt = itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, systemUserId),
+        itemId);
+    if (itemsOpt.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが見つかりません");
+    }
+
+    Item item = itemsOpt.get();
+    item.setDeletedFlag(true);
+    itemRepository.save(item);
+  }
 }
