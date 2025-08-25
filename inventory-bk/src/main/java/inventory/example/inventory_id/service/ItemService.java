@@ -29,13 +29,15 @@ public class ItemService {
   @Value("${system.userid}")
   private int systemUserId;
 
+  private String categoryNotFoundMsg = "カテゴリーが見つかりません";
+
   public void createItem(Integer userId, ItemRequest itemRequest) {
 
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId),
         itemRequest.getCategoryName());
 
     if (categoryList.isEmpty()) {
-      throw new IllegalArgumentException("カテゴリーが見つかりません");
+      throw new IllegalArgumentException(categoryNotFoundMsg);
     }
     Category cate = categoryList.get(0);
 
@@ -67,7 +69,7 @@ public class ItemService {
   public List<ItemDto> getItems(Integer userId, String categoryName) {
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName);
     if (categoryList.isEmpty()) {
-      throw new IllegalArgumentException("カテゴリーが見つかりません");
+      throw new IllegalArgumentException(categoryNotFoundMsg);
     }
     Category category = categoryList.get(0);
     // カテゴリーに紐づくアイテムを取得
