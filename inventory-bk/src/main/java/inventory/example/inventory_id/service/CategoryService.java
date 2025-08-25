@@ -58,7 +58,7 @@ public class CategoryService {
           "登録できるカテゴリの上限に達しています");
     }
     boolean isNameExist = categoryList.stream()
-        .anyMatch(category -> category.getName().equals(categoryRequest.getName()) && !category.isDeletedFlag());
+        .anyMatch(category -> category.getName().equals(categoryRequest.getName()));
     if (isNameExist) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "カテゴリー名はすでに存在します");
     }
@@ -94,7 +94,7 @@ public class CategoryService {
     if (category.getUserId() != userId) {
       throw new IllegalArgumentException("デフォルトカテゴリは削除できません");
     }
-    if (category.getItems() == null || category.getItems().isEmpty()) {
+    if (category.getItems().isEmpty()) {
       // アイテムが存在しない場合のみ削除フラグを立てる
       category.setDeletedFlag(true);
       categoryRepo.save(category);
