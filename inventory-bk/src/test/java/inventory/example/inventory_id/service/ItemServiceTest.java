@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataAccessException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -163,6 +164,37 @@ class ItemServiceTest {
   }
 
   @Test
+  @Tag("createItem")
+  @DisplayName("アイテム作成 - 名前が違うアイテムが存在するが削除フラグが立っている場合")
+  void testCreateItemThatHasDeletedFlagButDifferentName() {
+    int userId = defaultUserId;
+    int systemUserId = defaultSystemUserId;
+    String categoryName = "Laptop";
+    String itemName = "Notebook";
+    String differentItemName = "Tablet";
+
+    Category category = new Category(categoryName);
+    category.setUserId(userId);
+
+    Item existingItem = new Item();
+    existingItem.setName(differentItemName);
+    existingItem.setDeletedFlag(true);
+
+    category.setItems(new ArrayList<>(List.of(existingItem)));
+
+    ItemRequest request = new ItemRequest();
+    request.setName(itemName);
+    request.setQuantity(5);
+    request.setCategoryName(categoryName);
+
+    when(categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName))
+        .thenReturn(List.of(category));
+
+    assertDoesNotThrow(() -> itemService.createItem(userId, request));
+    verify(categoryRepository).save(any(Category.class));
+  }
+
+  @Test
   @Tag("getItem")
   @DisplayName("アイテム取得成功")
   void testGetItemsSortedByUpdatedAtDescending() {
@@ -229,6 +261,34 @@ class ItemServiceTest {
 
     assertEquals(1, result.size());
     assertEquals("Notebook", result.get(0).getName());
+  }
+
+  @Test
+  @Tag("getItem")
+  @DisplayName("アイテム取得失敗- 削除済みカテゴリ場合のエラー")
+  void testGetItemsThatDeletedItemsOnlyExist() {
+    int userId = defaultUserId;
+    int systemUserId = defaultSystemUserId;
+    String categoryName = "Laptop";
+
+    Category category = new Category(categoryName);
+    category.setUserId(userId);
+    category.setDeletedFlag(true);
+
+    Item item1 = new Item();
+    item1.setName("Notebook");
+    item1.setQuantity(5);
+    item1.setUpdatedAt(LocalDateTime.now());
+    item1.setDeletedFlag(false);
+    item1.setCategory(category);
+
+    category.setItems(List.of(item1));
+
+    when(categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName))
+        .thenReturn(List.of(category));
+
+    Exception ex = assertThrows(IllegalArgumentException.class, () -> itemService.getItems(userId, categoryName));
+    assertEquals(categoryNotFoundMsg, ex.getMessage());
   }
 
   @Test
@@ -327,7 +387,7 @@ class ItemServiceTest {
         .thenReturn(items);
 
     Exception ex = assertThrows(IllegalArgumentException.class, () -> itemService.updateItem(userId, itemId, request));
-    assertEquals("そのアイテム名は既に登録されています", ex.getMessage());
+    assertEquals("アイテム名は既に登録されています", ex.getMessage());
   }
 
   @Test
@@ -378,6 +438,7 @@ class ItemServiceTest {
   }
 
   @Test
+  @Tag("deleteItem")
   @DisplayName("アイテム削除成功")
   void testDeleteItemSuccess() {
     int userId = defaultUserId;
@@ -396,6 +457,7 @@ class ItemServiceTest {
   }
 
   @Test
+  @Tag("deleteItem")
   @DisplayName("アイテム削除失敗 - アイテムが見つからない")
   void testDeleteItemNotFound() {
     int userId = defaultUserId;
@@ -404,5 +466,40 @@ class ItemServiceTest {
         .thenReturn(Optional.empty());
     Exception ex = assertThrows(ResponseStatusException.class, () -> itemService.deleteItem(userId, itemId));
     assertEquals("アイテムが見つかりません", ((ResponseStatusException) ex).getReason());
+  }
+
+  @Test
+  @Tag("DB error")
+  @DisplayName("アイテム取得失敗 - DBエラー")
+  void selectItem_dbError() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    Item item = new Item();
+    item.setId(itemId);
+    item.setUserId(userId);
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(any(List.class), any(UUID.class)))
+        .thenThrow(new DataAccessException("DB error") {
+        });
+    Exception ex = assertThrows(DataAccessException.class, () -> itemService.deleteItem(userId, itemId));
+    assertEquals("DB error", ex.getMessage());
+  }
+
+  @Test
+  @Tag("DB error")
+  @DisplayName("アイテム保存失敗 - DBエラー")
+  void saveItem_dbError() {
+    int userId = defaultUserId;
+    UUID itemId = UUID.randomUUID();
+    Item item = new Item();
+    item.setId(itemId);
+    item.setUserId(userId);
+
+    when(itemRepository.findByUserIdInAndIdAndDeletedFlagFalse(List.of(userId, defaultSystemUserId), itemId))
+        .thenReturn(Optional.of(item));
+    when(itemRepository.save(any(Item.class))).thenThrow(new DataAccessException("DB エラー") {
+    });
+
+    Exception ex = assertThrows(DataAccessException.class, () -> itemService.deleteItem(userId, itemId));
+    assertEquals("DB エラー", ex.getMessage());
   }
 }
