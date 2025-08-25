@@ -52,7 +52,7 @@ public class CategoryService {
         .filter(category -> category.getUserId() == userId)
         .toList();
 
-    // ユーザのカテゴリ数を確認,50以上は登録不可
+    // ユーザカテゴリーの上限は50件まで
     if (userCategories.size() >= 50) {
       throw new ResponseStatusException(HttpStatus.CONFLICT,
           "登録できるカテゴリの上限に達しています");
