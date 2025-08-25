@@ -31,7 +31,9 @@ public class ItemService {
 
   private String categoryNotFoundMsg = "カテゴリーが見つかりません";
 
-  public void createItem(Integer userId, ItemRequest itemRequest) {
+  public void createItem(
+      Integer userId,
+      ItemRequest itemRequest) {
 
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId),
         itemRequest.getCategoryName());
@@ -58,7 +60,9 @@ public class ItemService {
     categoryRepository.save(cate);
   }
 
-  public List<ItemDto> getItems(Integer userId, String categoryName) {
+  public List<ItemDto> getItems(
+      Integer userId,
+      String categoryName) {
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName);
     List<Category> notDeletedCategoryList = categoryList.stream()
         .filter(category -> !category.isDeletedFlag())

@@ -15,5 +15,7 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
       List<Integer> userIds,
       String categoryName);
 
-  Optional<Item> findByUserIdInAndIdAndDeletedFlagFalse(List<Integer> userIds, UUID itemId);
+  Optional<Item> findByUserIdInAndIdAndDeletedFlagFalse(
+      List<Integer> userIds,
+      UUID itemId);
 }
