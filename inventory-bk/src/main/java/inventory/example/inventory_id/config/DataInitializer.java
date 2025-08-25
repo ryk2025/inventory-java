@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import inventory.example.inventory_id.model.Category;
+import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepository;
 
 @Component
@@ -31,6 +32,10 @@ public class DataInitializer implements CommandLineRunner {
       if (!exists) {
         Category category = new Category(name);
         category.setUserId(systemUserId);
+        Item item = new Item("default Item");
+        item.setCategory(category);
+        item.setUserId(systemUserId);
+        category.setItems(List.of(item));
         categoryRepo.save(category);
       }
     }
