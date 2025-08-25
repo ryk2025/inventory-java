@@ -1,14 +1,18 @@
 package inventory.example.inventory_id.service;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
-import inventory.example.inventory_id.repository.CategoryRepo;
+import inventory.example.inventory_id.repository.CategoryRepository;
 import inventory.example.inventory_id.repository.ItemRepo;
 import inventory.example.inventory_id.request.ItemRequest;
 
@@ -18,7 +22,7 @@ public class ItemService {
   private ItemRepo itemRepository;
 
   @Autowired
-  private CategoryRepo categoryRepository;
+  private CategoryRepository categoryRepository;
 
   @Value("${system.userid}")
   private int systemUserId;
@@ -48,5 +52,34 @@ public class ItemService {
     item.setQuantity(itemRequest.getQuantity());
     cate.getItems().add(item);
     categoryRepository.save(cate);
+  }
+
+  public List<ItemDto> getItems(Integer userId, String categoryName) {
+    List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId), categoryName);
+    List<Category> notDeletedCategoryList = categoryList.stream()
+        .filter(category -> !category.isDeletedFlag())
+        .toList();
+    if (notDeletedCategoryList.isEmpty()) {
+      throw new IllegalArgumentException("カテゴリーが見つかりません");
+    }
+
+    Category category = notDeletedCategoryList.get(0);
+    // カテゴリーに紐づくアイテムを取得
+    List<ItemDto> items = category.getItems().stream()
+        .filter(item -> !item.isDeletedFlag())
+        // 更新日時でソートし、DTOに変換
+        .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
+        .map(item -> {
+          ItemDto dto = new ItemDto();
+          dto.setName(item.getName());
+          dto.setQuantity(item.getQuantity());
+          return dto;
+        }).toList();
+
+    if (items.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "アイテムが登録されていません");
+    }
+
+    return items;
   }
 }
