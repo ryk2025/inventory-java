@@ -57,7 +57,7 @@ public class CategoryServiceTest {
     request.setName("TestCategory");
     int userId = defaultUserId;
 
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of());
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId))).thenReturn(List.of());
 
     Category savedCategory = new Category();
     savedCategory.setName(request.getName());
@@ -81,7 +81,7 @@ public class CategoryServiceTest {
     Category savedCategory = new Category();
     savedCategory.setName(request.getName());
     savedCategory.setUserId(userId);
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of(savedCategory));
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId))).thenReturn(List.of(savedCategory));
     Exception exception = assertThrows(ResponseStatusException.class, () -> {
       categoryService.createCategory(request, userId);
     });
@@ -130,7 +130,8 @@ public class CategoryServiceTest {
     }
 
     // Mock the repository to return the list
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(existingCategories);
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId)))
+        .thenReturn(existingCategories);
 
     Exception exception = assertThrows(ResponseStatusException.class, () -> {
       categoryService.createCategory(request, userId);
@@ -205,7 +206,8 @@ public class CategoryServiceTest {
     category.setId(categoryId);
     category.setUserId(userId);
     category.setItems(new ArrayList<>());
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of(category));
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId)))
+        .thenReturn(List.of(category));
 
     assertDoesNotThrow(() -> categoryService.deleteCategory(categoryId, userId));
     assertTrue(category.isDeletedFlag());
@@ -221,7 +223,8 @@ public class CategoryServiceTest {
     category.setId(categoryId);
     category.setUserId(userId);
     category.setItems(new ArrayList<Item>(List.of(new Item())));
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of(category));
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId)))
+        .thenReturn(List.of(category));
 
     Exception exception = assertThrows(IllegalArgumentException.class, () -> {
       categoryService.deleteCategory(categoryId, userId);
@@ -240,7 +243,8 @@ public class CategoryServiceTest {
     exsitedCategory.setId(UUID.randomUUID());
     exsitedCategory.setUserId(userId);
 
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of(exsitedCategory));
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId)))
+        .thenReturn(List.of(exsitedCategory));
 
     Exception ex = assertThrows(ResponseStatusException.class, () -> {
       categoryService.deleteCategory(targetCategoryId, userId);
@@ -259,7 +263,8 @@ public class CategoryServiceTest {
     category.setId(categoryId);
     category.setUserId(defaultSystemUserId);
     category.setItems(new ArrayList<>());
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of(category));
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId)))
+        .thenReturn(List.of(category));
 
     Exception exception = assertThrows(IllegalArgumentException.class, () -> {
       categoryService.deleteCategory(categoryId, userId);
@@ -274,7 +279,7 @@ public class CategoryServiceTest {
   void testDeleteCategoryEmptyList() {
     int userId = defaultUserId;
     UUID categoryId = UUID.randomUUID();
-    when(categoryRepo.findByUserIdIn(List.of(userId, defaultSystemUserId))).thenReturn(List.of());
+    when(categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, defaultSystemUserId))).thenReturn(List.of());
 
     Exception exception = assertThrows(ResponseStatusException.class, () -> {
       categoryService.deleteCategory(categoryId, userId);
