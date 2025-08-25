@@ -41,6 +41,8 @@ class ItemServiceTest {
   @InjectMocks
   private ItemService itemService;
 
+  private String categoryNotFoundMsg = "カテゴリーが見つかりません";
+
   private String itemNotFoundMsg = "アイテムが見つかりません";
 
   private int defaultUserId = 111;
@@ -98,7 +100,7 @@ class ItemServiceTest {
         .thenReturn(List.of());
 
     Exception ex = assertThrows(IllegalArgumentException.class, () -> itemService.createItem(userId, request));
-    assertEquals("カテゴリーが見つかりません", ex.getMessage());
+    assertEquals(categoryNotFoundMsg, ex.getMessage());
   }
 
   @Test
@@ -241,7 +243,7 @@ class ItemServiceTest {
         .thenReturn(List.of());
 
     Exception ex = assertThrows(IllegalArgumentException.class, () -> itemService.getItems(userId, categoryName));
-    assertEquals("カテゴリーが見つかりません", ex.getMessage());
+    assertEquals(categoryNotFoundMsg, ex.getMessage());
   }
 
   @Test

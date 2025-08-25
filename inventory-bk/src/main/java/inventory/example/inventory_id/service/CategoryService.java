@@ -25,6 +25,8 @@ public class CategoryService {
   @Value("${system.userid}")
   private int systemUserId;
 
+  private String categoryNotFoundMsg = "カテゴリーが見つかりません";
+
   public List<CategoryDto> getAllCategories(int userId) {
     // ユーザとデフォルトのカテゴリを取得
     return categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, systemUserId)).stream()
@@ -69,7 +71,7 @@ public class CategoryService {
   public Category updateCategory(UUID categoryId, CategoryRequest categoryRequest, int userId) {
     Optional<Category> categoryOpt = categoryRepo.findByUserIdAndId(userId, categoryId);
     if (!categoryOpt.isPresent()) {
-      throw new IllegalArgumentException("カテゴリーが見つかりません");
+      throw new IllegalArgumentException(categoryNotFoundMsg);
     }
     Category category = categoryOpt.get();
     if (category.getUserId() != userId) {
@@ -82,12 +84,12 @@ public class CategoryService {
   public void deleteCategory(UUID id, int userId) {
     List<Category> categoryList = categoryRepo.findByUserIdInAndDeletedFlagFalse(List.of(userId, systemUserId));
     if (categoryList.isEmpty()) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "カテゴリーが見つかりません");
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, categoryNotFoundMsg);
     }
     Category category = categoryList.stream()
         .filter(cat -> cat.getId().equals(id))
         .findFirst()
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "カテゴリーが見つかりません"));
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, categoryNotFoundMsg));
 
     if (category.getUserId() != userId) {
       throw new IllegalArgumentException("デフォルトカテゴリは削除できません");

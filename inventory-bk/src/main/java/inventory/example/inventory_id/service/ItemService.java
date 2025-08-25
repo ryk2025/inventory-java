@@ -29,13 +29,15 @@ public class ItemService {
   @Value("${system.userid}")
   private int systemUserId;
 
+  private String categoryNotFoundMsg = "カテゴリーが見つかりません";
+
   public void createItem(Integer userId, ItemRequest itemRequest) {
 
     List<Category> categoryList = categoryRepository.findByUserIdInAndName(List.of(userId, systemUserId),
         itemRequest.getCategoryName());
 
     if (categoryList.isEmpty()) {
-      throw new IllegalArgumentException("カテゴリーが見つかりません");
+      throw new IllegalArgumentException(categoryNotFoundMsg);
     }
     Category cate = categoryList.get(0);
 
@@ -62,7 +64,7 @@ public class ItemService {
         .filter(category -> !category.isDeletedFlag())
         .toList();
     if (notDeletedCategoryList.isEmpty()) {
-      throw new IllegalArgumentException("カテゴリーが見つかりません");
+      throw new IllegalArgumentException(categoryNotFoundMsg);
     }
 
     Category category = notDeletedCategoryList.get(0);

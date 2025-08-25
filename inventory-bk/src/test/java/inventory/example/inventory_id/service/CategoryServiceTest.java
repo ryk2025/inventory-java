@@ -43,6 +43,8 @@ public class CategoryServiceTest {
 
   private int defaultSystemUserId = 999;
 
+  private String categoryNotFoundMsg = "カテゴリーが見つかりません";
+
   @BeforeEach
   void setup() {
     MockitoAnnotations.openMocks(this);
@@ -173,7 +175,7 @@ public class CategoryServiceTest {
       categoryService.updateCategory(categoryId, request, userId);
     });
 
-    assertEquals("カテゴリーが見つかりません", exception.getMessage());
+    assertEquals(categoryNotFoundMsg, exception.getMessage());
   }
 
   @Test
@@ -250,7 +252,7 @@ public class CategoryServiceTest {
       categoryService.deleteCategory(targetCategoryId, userId);
     });
 
-    assertEquals("カテゴリーが見つかりません", ((ResponseStatusException) ex).getReason());
+    assertEquals(categoryNotFoundMsg, ((ResponseStatusException) ex).getReason());
   }
 
   @Test
@@ -285,7 +287,7 @@ public class CategoryServiceTest {
       categoryService.deleteCategory(categoryId, userId);
     });
 
-    assertEquals("カテゴリーが見つかりません", ((ResponseStatusException) exception).getReason());
+    assertEquals(categoryNotFoundMsg, ((ResponseStatusException) exception).getReason());
   }
 
   @Test
