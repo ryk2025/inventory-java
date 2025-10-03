@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import inventory.example.inventory_id.dto.CategoryDto;
+import inventory.example.inventory_id.dto.ItemDto;
 import inventory.example.inventory_id.model.Category;
 import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.repository.CategoryRepository;
@@ -23,33 +24,53 @@ public class CategoryService {
   private CategoryRepository categoryRepository;
 
   @Value("${system.userid}")
-  private int systemUserId;
+  private String systemUserId;
 
   private String categoryNotFoundMsg = "カテゴリーが見つかりません";
 
-  public List<CategoryDto> getAllCategories(int userId) {
+  public List<CategoryDto> getAllCategories(String userId) {
     // ユーザとデフォルトのカテゴリを取得
-    return categoryRepository.findNotDeleted(List.of(userId, systemUserId)).stream()
+    List<Category> categories = categoryRepository.findNotDeleted(List.of(userId, systemUserId));
+    if (categories.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, categoryNotFoundMsg);
+    }
+    return categories.stream()
         .sorted(Comparator.comparing(Category::getName))
         .map(category -> new CategoryDto(category.getName()))
         .toList();
   }
 
-  public List<Item> getCategoryItems(int userId, UUID categoryId) {
+  public List<ItemDto> getCategoryItems(String userId, UUID categoryId) {
     List<Category> categories = categoryRepository.findNotDeleted(List.of(userId, systemUserId));
-    return categories.stream()
+    // ユーザのカテゴリを取得
+    Optional<Category> categoryOpt = categories.stream()
         .filter(category -> category.getId().equals(categoryId))
-        .findFirst()
-        .map(Category::getItems)
-        .orElse(List.of()); // アイテムが見つからない場合は空リストを返す
+        .findFirst();
+
+    if (categoryOpt.isEmpty()) {
+      return List.of();
+    }
+
+    Category category = categoryOpt.get();
+    // ユーザのアイテムを更新日時の降順で取得
+    List<Item> sortedUserItems = category.getItems().stream()
+        .filter(item -> item.getUserId().equals(userId) && !item.isDeletedFlag())
+        .sorted(Comparator.comparing(Item::getUpdatedAt).reversed())
+        .toList();
+    // アイテムDTOのリストを作成
+    List<ItemDto> itemDtos = sortedUserItems.stream()
+        .map(item -> new ItemDto(item.getName(), item.getCategoryName(), 0, 0))
+        .toList();
+
+    return itemDtos;
   }
 
-  public Category createCategory(CategoryRequest categoryRequest, int userId) {
+  public Category createCategory(CategoryRequest categoryRequest, String userId) {
 
     List<Category> categoryList = categoryRepository.findNotDeleted(List.of(userId, systemUserId));
 
     List<Category> userCategories = categoryList.stream()
-        .filter(category -> category.getUserId() == userId)
+        .filter(category -> category.getUserId().equals(userId))
         .toList();
 
     // ユーザカテゴリーの上限は50件まで
@@ -68,13 +89,13 @@ public class CategoryService {
     return categoryRepository.save(category);
   }
 
-  public Category updateCategory(UUID categoryId, CategoryRequest categoryRequest, int userId) {
+  public Category updateCategory(UUID categoryId, CategoryRequest categoryRequest, String userId) {
     Optional<Category> categoryOpt = categoryRepository.findUserCategory(List.of(userId, systemUserId), categoryId);
     if (!categoryOpt.isPresent()) {
       throw new IllegalArgumentException(categoryNotFoundMsg);
     }
     Category category = categoryOpt.get();
-    if (category.getUserId() != userId) {
+    if (!category.getUserId().equals(userId)) {
       throw new IllegalArgumentException("デフォルトカテゴリは編集できません");
     }
     List<Category> exsitCategory = categoryRepository
@@ -88,7 +109,7 @@ public class CategoryService {
     return categoryRepository.save(category);
   }
 
-  public void deleteCategory(UUID id, int userId) {
+  public void deleteCategory(UUID id, String userId) {
     List<Category> categoryList = categoryRepository.findNotDeleted(List.of(userId, systemUserId));
     if (categoryList.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, categoryNotFoundMsg);
@@ -98,10 +119,11 @@ public class CategoryService {
         .findFirst()
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, categoryNotFoundMsg));
 
-    if (category.getUserId() != userId) {
+    if (!category.getUserId().equals(userId)) {
       throw new IllegalArgumentException("デフォルトカテゴリは削除できません");
     }
-    if (category.getItems().isEmpty()) {
+    if (category.getItems().isEmpty() ||
+        category.getItems().stream().allMatch(item -> item.isDeletedFlag())) {
       // アイテムが存在しない場合のみ削除フラグを立てる
       category.setDeletedFlag(true);
       categoryRepository.save(category);

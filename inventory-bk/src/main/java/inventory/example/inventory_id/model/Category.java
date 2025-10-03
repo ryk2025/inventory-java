@@ -25,12 +25,17 @@ public class Category {
   private UUID id;
 
   private String name;
-  private int userId;
+  private String userId;
   private boolean deletedFlag;
   @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Item> items;
 
   public Category(String name) {
     this.name = name;
+  }
+
+  public Category(String name, String userId) {
+    this.name = name;
+    this.userId = userId;
   }
 }

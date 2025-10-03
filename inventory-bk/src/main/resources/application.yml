@@ -24,8 +24,13 @@ spring:
 
 logging:
   level:
-    org.springframework.web: Error
-    org.springframework.jdbc: Error
+    org:
+      springframework:
+        web: Error
+        jdbc: Error
 
 system:
   userid: 9999
+
+firebase:
+  signUpBaseUrl: https://identitytoolkit.googleapis.com/v1/accounts:signUp

@@ -1,7 +1,7 @@
 package inventory.example.inventory_id.model;
 
-import java.util.UUID;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,17 +28,17 @@ public class Item {
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)
   private UUID id;
-
   private String name;
-  private long userId;
+  private String userId;
   @ManyToOne
   @JoinColumn(name = "category_id")
   @JsonIgnore
   private Category category;
-  private int quantity;
-  private boolean deletedFlag;
-
+  private boolean deletedFlag = false;
   private LocalDateTime updatedAt;
+
+  int totalQuantity = 0;
+  int totalPrice = 0;
 
   @PrePersist
   @PreUpdate
@@ -53,5 +53,44 @@ public class Item {
 
   public Item(String name) {
     this.name = name;
+  }
+
+  public Item(
+      String name,
+      String userId,
+      Category category,
+      boolean deletedFlag) {
+    this.name = name;
+    this.userId = userId;
+    this.category = category;
+    this.deletedFlag = deletedFlag;
+  }
+
+  public Item(
+      String name,
+      String userId,
+      Category category,
+      int total_quantity,
+      int total_price,
+      boolean deletedFlag) {
+    this.name = name;
+    this.userId = userId;
+    this.category = category;
+    this.totalQuantity = total_quantity;
+    this.totalPrice = total_price;
+    this.deletedFlag = deletedFlag;
+  }
+
+  public Item(
+      String name,
+      String userId,
+      Category category,
+      boolean deletedFlag,
+      LocalDateTime updatedAt) {
+    this.name = name;
+    this.userId = userId;
+    this.category = category;
+    this.deletedFlag = deletedFlag;
+    this.updatedAt = updatedAt;
   }
 }
