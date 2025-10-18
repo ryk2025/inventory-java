@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ItemRecordRepository extends JpaRepository<ItemRecord, UUID> {
+public interface ItemRecordRepository extends JpaRepository<ItemRecord, Long> {
   /**
    * ユーザーIDとレコードIDでItemRecordを取得
    */
@@ -25,7 +25,7 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, UUID> {
     """,
     nativeQuery = true
   )
-  Optional<ItemRecord> getRecordByUserIdAndId(String userId, UUID id);
+  Optional<ItemRecord> getRecordByUserIdAndId(String userId, Long id);
 
   /**
    * 指定の入庫のレコードにまだ出庫していない、残り数量を取得
@@ -50,7 +50,7 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, UUID> {
     """,
     nativeQuery = true
   )
-  Integer getInrecordRemainQuantity(UUID recordId);
+  Integer getInrecordRemainQuantity(Long recordId);
 
   /**
    * アイテムIDに紐づく入庫・出庫レコードの合計数量を取得
@@ -74,4 +74,21 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, UUID> {
     nativeQuery = true
   )
   int getItemTotalQuantity(UUID itemId);
+
+  /**
+   * IDとユーザーIDでレコードを取得
+   */
+  @Query(
+    value = """
+    SELECT
+      *
+    FROM
+      item_record
+    WHERE id = :id
+      AND user_id = :userId
+      AND deleted_flag = FALSE
+    """,
+    nativeQuery = true
+  )
+  Optional<ItemRecord> findByIdAndUserId(Long id, String userId);
 }

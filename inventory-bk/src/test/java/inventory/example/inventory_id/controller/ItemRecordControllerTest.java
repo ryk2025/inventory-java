@@ -2,14 +2,19 @@ package inventory.example.inventory_id.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import inventory.example.inventory_id.dto.ItemRecordDto;
 import inventory.example.inventory_id.enums.TransactionType;
 import inventory.example.inventory_id.exception.AuthenticationException;
 import inventory.example.inventory_id.exception.ValidationException;
@@ -18,6 +23,7 @@ import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.request.ItemRecordRequest;
 import inventory.example.inventory_id.service.ItemRecordService;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,11 +57,11 @@ class ItemRecordControllerTest {
   private ObjectMapper objectMapper = new ObjectMapper()
     .registerModule(new JavaTimeModule());
 
-  private String testUserId = "testUserId";
-  private String itemNotFoundMsg = "アイテムが見つかりません";
-  private String serverErrorMsg = "サーバーエラーが発生しました";
-  private static String itemRecordNotFoundMsg =
-    "指定のレコードが存在しません。";
+  private final String testUserId = "testUserId";
+  private final String itemNotFoundMsg = "アイテムが見つかりません";
+  private final String serverErrorMsg = "サーバーエラーが発生しました";
+  private final String itemRecordNotFoundMsg = "指定のレコードが存在しません。";
+  private final String ITEM_RECORD_DELETED = "入出庫履歴を削除しました";
 
   @BeforeEach
   void setUp() {
@@ -126,7 +132,7 @@ class ItemRecordControllerTest {
       testItem.getId(),
       5,
       TransactionType.OUT,
-      UUID.randomUUID()
+      1L
     );
 
     when(
@@ -163,7 +169,7 @@ class ItemRecordControllerTest {
       500,
       LocalDate.now().plusDays(30),
       TransactionType.OUT,
-      UUID.randomUUID()
+      1L
     );
 
     doThrow(
@@ -193,7 +199,7 @@ class ItemRecordControllerTest {
       UUID.randomUUID(),
       5,
       TransactionType.OUT,
-      UUID.randomUUID()
+      1L
     );
 
     doThrow(
@@ -520,6 +526,167 @@ class ItemRecordControllerTest {
             """
             {"error":"有効期限の形式が不正です。yyyy-MM-dd形式で入力してください。"}
             """
+          )
+      );
+  }
+
+  @Test
+  @Tag("DELETE: /api/item-record")
+  @DisplayName("アイテム記録削除-202 正常系")
+  void deleteItemRecord_success() throws Exception {
+    Long recordId = 1L;
+    doReturn(List.of(recordId))
+      .when(itemRecordService)
+      .deleteItemRecord(any(Long.class), anyString());
+
+    mockMvc
+      .perform(
+        delete("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isAccepted())
+      .andExpect(jsonPath("$.message").value(ITEM_RECORD_DELETED))
+      .andExpect(jsonPath("$.deletedRecordIds[0]").value(recordId));
+  }
+
+  @Test
+  @Tag("DELETE: /api/item-record")
+  @DisplayName("アイテム記録削除失敗 - 指定のレコードが存在しません。")
+  void deleteItemRecord_notFound() throws Exception {
+    doThrow(new IllegalArgumentException(itemRecordNotFoundMsg))
+      .when(itemRecordService)
+      .deleteItemRecord(any(Long.class), anyString());
+
+    mockMvc
+      .perform(
+        delete("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isBadRequest())
+      .andExpect(
+        content()
+          .json(
+            """
+            {"message":%s}
+            """.formatted(itemRecordNotFoundMsg)
+          )
+      );
+  }
+
+  @Test
+  @Tag("DELETE: /api/item-record")
+  @DisplayName("アイテム記録作成-500 サーバーエラーが発生しました")
+  void deleteItemRecord_generalException() throws Exception {
+    doThrow(new RuntimeException(serverErrorMsg))
+      .when(itemRecordService)
+      .deleteItemRecord(any(Long.class), anyString());
+
+    mockMvc
+      .perform(
+        delete("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isInternalServerError())
+      .andExpect(
+        content()
+          .json(
+            """
+            {"message":"%s"}
+            """.formatted(serverErrorMsg)
+          )
+      );
+  }
+
+  @Test
+  @Tag("GET: /api/item-record")
+  @DisplayName("アイテム記録取得-200 正常系")
+  void getItemRecords_success() throws Exception {
+    String itemName = "Test Item";
+    String categoryName = "Test Category";
+
+    String expirationDate = LocalDate.now().plusDays(30).toString();
+
+    ItemRecordDto itemRecordDto = new ItemRecordDto(
+      itemName,
+      categoryName,
+      100,
+      500,
+      TransactionType.IN,
+      expirationDate
+    );
+
+    when(
+      itemRecordService.getItemRecord(any(Long.class), anyString())
+    ).thenReturn(itemRecordDto);
+
+    mockMvc
+      .perform(
+        get("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.itemName").value(itemName))
+      .andExpect(jsonPath("$.categoryName").value(categoryName))
+      .andExpect(jsonPath("$.quantity").value(100))
+      .andExpect(jsonPath("$.price").value(500))
+      .andExpect(jsonPath("$.transactionType").value("IN"))
+      .andExpect(jsonPath("$.expirationDate").value(expirationDate));
+  }
+
+  @Test
+  @Tag("GET: /api/item-record")
+  @DisplayName("アイテム記録取得-404 指定のレコードが存在しません。")
+  void getItemRecords_notFound() throws Exception {
+    doThrow(
+      new ResponseStatusException(
+        HttpStatus.NOT_FOUND,
+        "指定のレコードが存在しません。"
+      )
+    )
+      .when(itemRecordService)
+      .getItemRecord(any(Long.class), anyString());
+    mockMvc
+      .perform(
+        get("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isNotFound())
+      .andExpect(
+        content()
+          .json(
+            """
+            {"message":"指定のレコードが存在しません。"}
+            """
+          )
+      );
+  }
+
+  @Test
+  @Tag("GET: /api/item-record")
+  @DisplayName("アイテム記録作成-500 サーバーエラーが発生しました")
+  void getItemRecords_generalException() throws Exception {
+    doThrow(new RuntimeException(serverErrorMsg))
+      .when(itemRecordService)
+      .getItemRecord(any(Long.class), anyString());
+
+    mockMvc
+      .perform(
+        get("/api/item-record")
+          .param("record_id", "1")
+          .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isInternalServerError())
+      .andExpect(
+        content()
+          .json(
+            """
+            {"message":"%s"}
+            """.formatted(serverErrorMsg)
           )
       );
   }
