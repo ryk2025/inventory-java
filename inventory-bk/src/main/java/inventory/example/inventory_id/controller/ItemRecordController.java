@@ -98,4 +98,15 @@ public class ItemRecordController extends BaseController {
       return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
   }
+
+  @GetMapping("/history")
+  public ResponseEntity<Object> getUserItemRecords() {
+    try {
+      String userId = fetchUserIdFromToken();
+      List<ItemRecordDto> itemRecords = itemRecordService.getUserItemRecords(userId);
+      return response(HttpStatus.OK, itemRecords);
+    } catch (Exception e) {
+      return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+  }
 }

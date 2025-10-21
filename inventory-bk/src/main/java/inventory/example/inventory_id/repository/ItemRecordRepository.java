@@ -1,10 +1,12 @@
 package inventory.example.inventory_id.repository;
 
 import inventory.example.inventory_id.model.ItemRecord;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -25,7 +27,10 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, Long> {
     """,
     nativeQuery = true
   )
-  Optional<ItemRecord> getRecordByUserIdAndId(String userId, Long id);
+  Optional<ItemRecord> getRecordByUserIdAndId(
+    @Param("userId") String userId,
+    @Param("id") Long id
+  );
 
   /**
    * 指定の入庫のレコードにまだ出庫していない、残り数量を取得
@@ -50,7 +55,7 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, Long> {
     """,
     nativeQuery = true
   )
-  Integer getInrecordRemainQuantity(Long recordId);
+  Integer getInrecordRemainQuantity(@Param("recordId") Long recordId);
 
   /**
    * アイテムIDに紐づく入庫・出庫レコードの合計数量を取得
@@ -73,11 +78,8 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, Long> {
     """,
     nativeQuery = true
   )
-  int getItemTotalQuantity(UUID itemId);
+  int getItemTotalQuantity(@Param("itemId") UUID itemId);
 
-  /**
-   * IDとユーザーIDでレコードを取得
-   */
   @Query(
     value = """
     SELECT
@@ -90,5 +92,54 @@ public interface ItemRecordRepository extends JpaRepository<ItemRecord, Long> {
     """,
     nativeQuery = true
   )
-  Optional<ItemRecord> findByIdAndUserId(Long id, String userId);
+  Optional<ItemRecord> findByIdAndUserId(
+    @Param("id") Long id,
+    @Param("userId") String userId
+  );
+
+  /**
+   * ユーザーIDで全レコードを取得
+   * 履歴がない時は空リストで返す
+   * createdAtの降順でソート
+   */
+  @Query(
+    value = """
+    SELECT
+      *
+    FROM
+      item_record
+    WHERE
+      user_id = :userId
+      AND deleted_flag = FALSE
+    ORDER BY
+      created_at DESC
+    """,
+    nativeQuery = true
+  )
+  List<ItemRecord> findUserItemRecords(@Param("userId") String userId);
+
+  /**
+   * アイテムIDとユーザーIDで全レコードを取得
+   * 履歴がない時は空リストで返す
+   * createdAtの降順でソート
+   */
+  @Query(
+    value = """
+    SELECT
+      *
+    FROM
+      item_record
+    WHERE
+      item_id = :itemId
+      AND user_id = :userId
+      AND deleted_flag = FALSE
+    ORDER BY
+      created_at DESC
+    """,
+    nativeQuery = true
+  )
+  List<ItemRecord> getRecordsByItemIdAndUserId(
+    @Param("itemId") UUID itemId,
+    @Param("userId") String userId
+  );
 }

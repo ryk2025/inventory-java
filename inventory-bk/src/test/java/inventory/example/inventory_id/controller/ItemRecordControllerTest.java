@@ -23,6 +23,7 @@ import inventory.example.inventory_id.model.Item;
 import inventory.example.inventory_id.request.ItemRecordRequest;
 import inventory.example.inventory_id.service.ItemRecordService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -607,7 +608,7 @@ class ItemRecordControllerTest {
     String itemName = "Test Item";
     String categoryName = "Test Category";
 
-    String expirationDate = LocalDate.now().plusDays(30).toString();
+    LocalDate expirationDate = LocalDate.now().plusDays(30);
 
     ItemRecordDto itemRecordDto = new ItemRecordDto(
       itemName,
@@ -615,7 +616,8 @@ class ItemRecordControllerTest {
       100,
       500,
       TransactionType.IN,
-      expirationDate
+      expirationDate,
+      LocalDateTime.now()
     );
 
     when(
@@ -634,7 +636,7 @@ class ItemRecordControllerTest {
       .andExpect(jsonPath("$.quantity").value(100))
       .andExpect(jsonPath("$.price").value(500))
       .andExpect(jsonPath("$.transactionType").value("IN"))
-      .andExpect(jsonPath("$.expirationDate").value(expirationDate));
+      .andExpect(jsonPath("$.expirationDate").value(expirationDate.toString()));
   }
 
   @Test
@@ -679,6 +681,86 @@ class ItemRecordControllerTest {
         get("/api/item-record")
           .param("record_id", "1")
           .contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isInternalServerError())
+      .andExpect(
+        content()
+          .json(
+            """
+            {"message":"%s"}
+            """.formatted(serverErrorMsg)
+          )
+      );
+  }
+
+  @Test
+  @Tag("GET: /api/item-record/history")
+  @DisplayName("ユーザーのアイテム記録一覧取得-200 正常系")
+  void getUserItemRecords_success() throws Exception {
+    String itemName = "Test Item";
+    String categoryName = "Test Category";
+    LocalDate expirationDate = LocalDate.now().plusDays(30);
+    ItemRecordDto itemRecordDto = new ItemRecordDto(
+      itemName,
+      categoryName,
+      100,
+      500,
+      TransactionType.IN,
+      expirationDate,
+      LocalDateTime.now()
+    );
+
+    when(itemRecordService.getUserItemRecords(anyString())).thenReturn(
+      List.of(itemRecordDto)
+    );
+    mockMvc
+      .perform(
+        get("/api/item-record/history").contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isOk())
+      .andExpect(
+        content()
+          .json(
+            """
+            [{
+              "itemName": "%s",
+              "categoryName": "%s",
+              "quantity": 100,
+              "price": 500,
+              "transactionType": "IN",
+              "expirationDate": "%s"
+            }]
+            """.formatted(itemName, categoryName, expirationDate)
+          )
+      );
+  }
+
+  @Test
+  @Tag("GET: /api/item-record/history")
+  @DisplayName("ユーザーのアイテム記録一覧取得-200 正常系(履歴なし)")
+  void getUserItemRecords_success_empty() throws Exception {
+    when(itemRecordService.getUserItemRecords(anyString())).thenReturn(
+      List.of()
+    );
+    mockMvc
+      .perform(
+        get("/api/item-record/history").contentType(MediaType.APPLICATION_JSON)
+      )
+      .andExpect(status().isOk())
+      .andExpect(content().json("[]"));
+  }
+
+  @Test
+  @Tag("GET: /api/item-record/history")
+  @DisplayName("アイテム記録一覧取得-500 サーバーエラー")
+  void getUserItemRecords_generalException() throws Exception {
+    doThrow(new RuntimeException(serverErrorMsg))
+      .when(itemRecordService)
+      .getUserItemRecords(anyString());
+
+    mockMvc
+      .perform(
+        get("/api/item-record/history").contentType(MediaType.APPLICATION_JSON)
       )
       .andExpect(status().isInternalServerError())
       .andExpect(

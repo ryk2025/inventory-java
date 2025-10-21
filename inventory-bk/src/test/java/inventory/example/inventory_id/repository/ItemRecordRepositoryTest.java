@@ -329,4 +329,55 @@ public class ItemRecordRepositoryTest {
     );
     assertThat(result).isNotPresent();
   }
+
+  @Test
+  @Tag("findUserItemRecords")
+  @DisplayName("ユーザーIDで全レコードを取得成功 - 削除されていないレコードのみ、順番はcreatedAtの降順")
+  void testFindUserItemRecords_Success() {
+    ItemRecord latestInRecord = new ItemRecord(
+      testUserItem,
+      testUserId,
+      15,
+      1500,
+      null,
+      TransactionType.IN
+    );
+    itemRecordRepository.save(latestInRecord);
+    var results = itemRecordRepository.findUserItemRecords(testUserId);
+    assertThat(results).hasSize(3);
+    assertThat(results).containsExactly(
+      latestInRecord,
+      testItemOutRecord,
+      testItemInRecord
+    );
+  }
+
+  @Test
+  @Tag("findUserItemRecords")
+  @DisplayName("ユーザーIDで全レコードを取得成功(履歴なし) ")
+  void testFindUserItemRecords_Empty() {
+    var results = itemRecordRepository.findUserItemRecords("noRecordUser");
+    assertThat(results).isEmpty();
+  }
+
+  @Test
+  @Tag("findAllByItemIdAndUserId")
+  @DisplayName("アイテムIDとユーザーIDで全レコードを取得成功 - 削除されていないレコードのみ、順番はcreatedAtの降順")
+  void testFindAllByItemIdAndUserId_Success() {
+    var results = itemRecordRepository.getRecordsByItemIdAndUserId(testUserItem.getId(), testUserId);
+    assertThat(results).hasSize(2);
+    assertThat(results).containsExactly(testItemOutRecord, testItemInRecord);
+  }
+
+  @Test
+  @Tag("findAllByItemIdAndUserId")
+  @DisplayName("アイテムIDとユーザーIDで全レコードを取得成功 - ゼロ件場合")
+  void testFindAllByItemIdAndUserId_Empty() {
+    Category newCategory = new Category("Category", testUserId);
+    categoryRepository.save(newCategory);
+    Item newItem = new Item("Test Item", testUserId, newCategory, false);
+    itemRepository.save(newItem);
+    var results = itemRecordRepository.getRecordsByItemIdAndUserId(newItem.getId(), testUserId);
+    assertThat(results).isEmpty();
+  }
 }
