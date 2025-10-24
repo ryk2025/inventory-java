@@ -72,6 +72,8 @@ public class ItemRecordRepositoryTest {
       testUserItem,
       testUserId,
       5,
+      testItemInRecord.getPrice(),
+      testItemInRecord.getExpirationDate(),
       TransactionType.OUT,
       testItemInRecord
     );
@@ -115,6 +117,8 @@ public class ItemRecordRepositoryTest {
       otherUserItem,
       otherUserId,
       20,
+      otherUserRecord.getPrice(),
+      otherUserRecord.getExpirationDate(),
       TransactionType.OUT,
       otherUserRecord
     );
